@@ -170,11 +170,22 @@ public class Lexer {
             advance(); // Consume the '.'
             while (isDigit(peek())) advance(); // Consume the digits after the '.'
 
-            // Create a TIPIK token (ensure the decimal part is captured correctly)
-            addToken(TokenType.TIPIK, source.substring(start, current));
+            String numberString = source.substring(start, current);
+            try {
+                double value = Double.parseDouble(numberString);
+                addToken(TokenType.TIPIK, value);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Invalid number format: " + numberString);
+            }
         } else {
             // If it's just an integer, create a NUMERO token
-            addToken(TokenType.NUMERO, source.substring(start, current));
+            String numberString = source.substring(start, current);
+            try {
+                double value = Double.parseDouble(numberString);
+                addToken(TokenType.NUMERO, value);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Invalid number format: " + numberString);
+            }
         }
     }
 
@@ -267,3 +278,4 @@ public class Lexer {
         tokens.add(new Token(type, text, literal, line));
     }
 }
+

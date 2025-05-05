@@ -130,7 +130,7 @@ public class Parser {
         System.out.println("DEBUG: Block parsed with " + statements.size() + " statements");
         return new Stmt.Block(statements);
     }
-    
+
     private Stmt whileStatement() {
         System.out.println("DEBUG: Starting while statement parsing");
         consume(TokenType.LPAREN, "Expect '(' after 'ALANG SA'.");
@@ -169,7 +169,10 @@ public class Parser {
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
             System.out.println("DEBUG: Found identifier for increment: " + name.lexeme);
-            if (match(TokenType.PLUS, TokenType.PLUS)) {
+            // Manually check for ++ to control token pointer
+            if (check(TokenType.PLUS) && peekNext() != null && peekNext().type == TokenType.PLUS) {
+                advance(); // Consume first PLUS
+                advance(); // Consume second PLUS
                 System.out.println("DEBUG: Found ++ operator");
                 increment = new Expr.Assign(name, new Expr.Binary(
                         new Expr.Variable(name),
@@ -182,7 +185,7 @@ public class Parser {
         if (increment == null) {
             throw new RuntimeException("Expect increment after comma.");
         }
-        System.out.println("DEBUG: Looking for closing parenthesis");
+        System.out.println("DEBUG: Looking for closing parenthesis, current token: " + peek());
         consume(TokenType.RPAREN, "Expect ')' after for clauses.");
         System.out.println("DEBUG: Found closing parenthesis");
 
@@ -226,6 +229,12 @@ public class Parser {
         statements.add(whileLoop);
         System.out.println("DEBUG: Created final block with initializer and while loop");
         return new Stmt.Block(statements);
+    }
+
+    // Add helper method to peek at the next token
+    private Token peekNext() {
+        if (current + 1 >= tokens.size()) return null;
+        return tokens.get(current + 1);
     }
 
     private Stmt varDeclaration() {
@@ -278,101 +287,160 @@ public class Parser {
     }
 
     private Expr expression() {
-        return assignment();
+        try {
+            System.out.println("DEBUG: Starting expression parsing at token: " + peek());
+            Expr expr = assignment();
+            System.out.println("DEBUG: Successfully parsed expression: " + expr);
+            return expr;
+        } catch (RuntimeException e) {
+            System.out.println("DEBUG: Error in expression(): " + e.getMessage() + " at token: " + peek());
+            throw e;
+        }
     }
 
     private Expr assignment() {
         Expr expr = logical();
-        if (match(TokenType.ASSIGN)) {
+        System.out.println("DEBUG: Logical expression: " + expr);
+        while (match(TokenType.ASSIGN)) {
             Token equals = previous();
+            System.out.println("DEBUG: Parsing assignment with operator: " + equals);
             Expr value = assignment();
+            System.out.println("DEBUG: Assignment value: " + value);
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
             }
-            throw new RuntimeException("Invalid assignment target.");
+            throw new RuntimeException("Invalid assignment target at token: " + peek());
         }
         return expr;
     }
 
     private Expr logical() {
         Expr expr = equality();
+        System.out.println("DEBUG: Logical expression: " + expr);
         while (match(TokenType.UG, TokenType.O)) {
             Token operator = previous();
+            System.out.println("DEBUG: Logical operator: " + operator);
             Expr right = equality();
+            System.out.println("DEBUG: Logical right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
+        System.out.println("DEBUG: Logical returning: " + expr);
         return expr;
     }
 
     private Expr equality() {
         Expr expr = comparison();
+        System.out.println("DEBUG: Equality expression: " + expr);
         while (match(TokenType.EQUAL, TokenType.NOT_EQUAL)) {
             Token operator = previous();
+            System.out.println("DEBUG: Equality operator: " + operator);
             Expr right = comparison();
+            System.out.println("DEBUG: Equality right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
+        System.out.println("DEBUG: Equality returning: " + expr);
         return expr;
     }
 
     private Expr comparison() {
+        System.out.println("DEBUG: Entering comparison, current token: " + peek() + ", position: " + current);
         Expr expr = term();
-        while (match(TokenType.LESS, TokenType.LESS_EQUAL,
-                TokenType.GREATER, TokenType.GREATER_EQUAL)) {
+        System.out.println("DEBUG: Comparison term: " + expr);
+        while (match(TokenType.LESS, TokenType.LESS_EQUAL, TokenType.GREATER, TokenType.GREATER_EQUAL)) {
             Token operator = previous();
+            System.out.println("DEBUG: Comparison operator: " + operator);
             Expr right = term();
+            System.out.println("DEBUG: Comparison right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
+        System.out.println("DEBUG: Comparison returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr term() {
+        System.out.println("DEBUG: Entering term, current token: " + peek() + ", position: " + current);
         Expr expr = factor();
+        System.out.println("DEBUG: Term factor: " + expr);
         while (match(TokenType.PLUS, TokenType.MINUS, TokenType.CONCAT)) {
             Token operator = previous();
+            System.out.println("DEBUG: Term operator: " + operator);
             Expr right = factor();
+            System.out.println("DEBUG: Term right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
+        System.out.println("DEBUG: Term returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr factor() {
+        System.out.println("DEBUG: Entering factor, current token: " + peek() + ", position: " + current);
         Expr expr = unary();
+        System.out.println("DEBUG: Factor unary: " + expr);
         while (match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
             Token operator = previous();
+            System.out.println("DEBUG: Factor operator: " + operator);
             Expr right = unary();
+            System.out.println("DEBUG: Factor right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
+        System.out.println("DEBUG: Factor returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr unary() {
+        System.out.println("DEBUG: Entering unary, current token: " + peek() + ", position: " + current);
         if (match(TokenType.MINUS, TokenType.NOT)) {
             Token operator = previous();
+            System.out.println("DEBUG: Unary operator: " + operator);
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
-        return primary();
+        Expr expr = primary();
+        System.out.println("DEBUG: Unary returning: " + expr + ", next token: " + peek() + ", position: " + current);
+        return expr;
     }
 
     private Expr primary() {
-        if (match(TokenType.TINUOD)) return new Expr.Literal(true);
-        if (match(TokenType.TIPIK)) return new Expr.Literal(false);
-        if (match(TokenType.NUMBER, TokenType.STRING, TokenType.CHAR)) {
+        System.out.println("DEBUG: Entering primary, current token: " + peek() + ", position: " + current);
+        if (match(TokenType.TINUOD)) {
+            System.out.println("DEBUG: Parsed TINUOD");
+            return new Expr.Literal(true);
+        }
+        if (match(TokenType.TIPIK)) {
+            System.out.println("DEBUG: Parsed TIPIK");
+            return new Expr.Literal(false);
+        }
+        if (match(TokenType.NUMERO, TokenType.STRING, TokenType.CHAR)) {
+            System.out.println("DEBUG: Parsed literal: " + previous().literal + " at token: " + previous());
             return new Expr.Literal(previous().literal);
         }
         if (match(TokenType.NEWLINE)) {
+            System.out.println("DEBUG: Parsed NEWLINE");
             return new Expr.Literal("\n");
         }
         if (match(TokenType.IDENTIFIER)) {
-            return new Expr.Variable(previous());
+            Token name = previous();
+            System.out.println("DEBUG: Parsed identifier: " + name.lexeme + " at token: " + name);
+            if (match(TokenType.PLUS, TokenType.PLUS)) {
+                System.out.println("DEBUG: Parsed increment: " + name.lexeme + "++");
+                return new Expr.Assign(name, new Expr.Binary(
+                        new Expr.Variable(name),
+                        new Token(TokenType.PLUS, "+", null, name.line),
+                        new Expr.Literal(1.0)
+                ));
+            }
+            return new Expr.Variable(name);
         }
         if (match(TokenType.LPAREN)) {
+            System.out.println("DEBUG: Parsing grouped expression");
             Expr expr = expression();
             consume(TokenType.RPAREN, "Expect ')' after expression.");
+            System.out.println("DEBUG: Parsed grouped expression: " + expr);
             return new Expr.Grouping(expr);
         }
-        throw new RuntimeException("Expect expression.");
+        System.out.println("DEBUG: Unexpected token in primary: " + peek());
+        throw new RuntimeException("Expect expression at token: " + peek().type + " lexeme: " + peek().lexeme);
     }
 
     private boolean match(TokenType... types) {
@@ -538,7 +606,7 @@ public class Parser {
             R visitVarStmt(Var stmt);
             R visitBlockStmt(Block stmt);
             R visitIfStmt(If stmt);
-            R visitWhileStmt(While stmt);
+            R visitWhileStmt(While stmt); // Already defined in Visitor
             R visitInputStmt(Input stmt);
         }
 
@@ -613,8 +681,6 @@ public class Parser {
             }
         }
 
-
-
         class Input implements Stmt {
             public final List<Token> variables;
 
@@ -625,6 +691,21 @@ public class Parser {
             @Override
             public <R> R accept(Visitor<R> visitor) {
                 return visitor.visitInputStmt(this);
+            }
+        }
+
+        class While implements Stmt {
+            public final Expr condition;
+            public final Stmt body;
+
+            public While(Expr condition, Stmt body) {
+                this.condition = condition;
+                this.body = body;
+            }
+
+            @Override
+            public <R> R accept(Visitor<R> visitor) {
+                return visitor.visitWhileStmt(this);
             }
         }
     }

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/BisayaPP.iml" filepath="$PROJECT_DIR$/BisayaPP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Bisaya-.iml" filepath="$PROJECT_DIR$/.idea/Bisaya-.iml" />
     </modules>
   </component>
 </project>
