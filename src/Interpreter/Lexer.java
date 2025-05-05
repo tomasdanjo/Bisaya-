@@ -196,12 +196,11 @@ public class Lexer {
 
         // Handle special case for multi-word keywords
         if (text.equals("KUNG")) {
-            if (peek() == ' ') { // Check for a space after "KUNG"
-                advance(); // Consume space
-                start = current; // Reset start index for second part
+            if (peek() == ' ') {
+                advance();
+                start = current;
                 while (isAlphaNumeric(peek())) advance();
                 String secondPart = source.substring(start, current);
-
                 if (secondPart.equals("DILI")) {
                     addToken(TokenType.KUNG_DILI);
                     return;
@@ -210,6 +209,8 @@ public class Lexer {
                     return;
                 }
             }
+            addToken(TokenType.KUNG); // Add KUNG token if not KUNG DILI or KUNG WALA
+            return;
         } else if (text.equals("ALANG")) {
             if (peek() == ' ') { // Check for a space after "ALANG"
                 advance(); // Consume space

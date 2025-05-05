@@ -75,7 +75,7 @@ public class BisayaMain {
             System.out.println("Parsed " + statements.size() + " statements");
 
             System.out.println("Starting interpretation...");
-            Interpreter interpreter = new Interpreter();
+            Interpreter interpreter = new Interpreter(parser);
             interpreter.interpret(statements);
             System.out.println("Interpretation complete");
         } catch (RuntimeException e) {

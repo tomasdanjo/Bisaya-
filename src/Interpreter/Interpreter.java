@@ -5,12 +5,19 @@ import java.util.*;
 public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Visitor<Void> {
     private final Map<String, Object> globals = new HashMap<>();
     private Map<String, Object> environment = globals;
+    private final Parser parser;
+
+    public Interpreter(Parser parser) {
+        this.parser = parser;
+    }
 
     public void interpret(List<Parser.Stmt> statements) {
         try {
+            System.out.println("Starting interpretation...");
             for (Parser.Stmt statement : statements) {
                 execute(statement);
             }
+            System.out.println("Interpretation complete");
         } catch (RuntimeException error) {
             throw error;
         }
@@ -33,60 +40,61 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
         switch (expr.operator.type) {
             case MINUS:
                 checkNumberOperand(expr.operator, right);
-                return -((Number)right).doubleValue();
+                return -(double)right;
             case NOT:
                 return !isTruthy(right);
         }
 
         return null;
     }
+
     @Override
     public Object visitBinaryExpr(Parser.Expr.Binary expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
 
         System.out.println("DEBUG: Binary operation " + expr.operator.type + " with left=" + left + " (" + left.getClass().getName() + ") right=" + right + " (" + right.getClass().getName() + ")");
-        System.out.println("DEBUG: Checking number operands for " + expr.operator.type);
+
         switch (expr.operator.type) {
             case PLUS:
                 if (left instanceof Double && right instanceof Double) {
                     return (Double)left + (Double)right;
                 }
-                if (left instanceof String && right instanceof String) {
-                    return (String)left + (String)right;
+                if (left instanceof String || right instanceof String) {
+                    return stringify(left) + stringify(right);
                 }
-                if (left instanceof Double && right instanceof Character) {
-                    return (Double)left + 1.0;
+                if (left instanceof Character && right instanceof Character) {
+                    return String.valueOf(left) + String.valueOf(right);
                 }
-                throw new RuntimeException("Operands must be two numbers or two strings.");
+                throw new RuntimeException("Operands must be numbers, strings, or characters.");
             case CONCAT:
                 return stringify(left) + stringify(right);
             case MINUS:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() - ((Number)right).doubleValue();
+                return (Double)left - (Double)right;
             case MULTIPLY:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() * ((Number)right).doubleValue();
+                return (Double)left * (Double)right;
             case DIVIDE:
                 checkNumberOperands(expr.operator, left, right);
-                if (((Number)right).doubleValue() == 0) throw new RuntimeException("Division by zero.");
-                return ((Number)left).doubleValue() / ((Number)right).doubleValue();
+                if ((Double)right == 0) throw new RuntimeException("Division by zero.");
+                return (Double)left / (Double)right;
             case MODULO:
                 checkNumberOperands(expr.operator, left, right);
-                if (((Number)right).doubleValue() == 0) throw new RuntimeException("Modulo by zero.");
-                return ((Number)left).doubleValue() % ((Number)right).doubleValue();
+                if ((Double)right == 0) throw new RuntimeException("Modulo by zero.");
+                return (Double)left % (Double)right;
             case GREATER:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() > ((Number)right).doubleValue() ? "OO" : "DILI";
+                return (Double)left > (Double)right ? "OO" : "DILI";
             case GREATER_EQUAL:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() >= ((Number)right).doubleValue() ? "OO" : "DILI";
+                return (Double)left >= (Double)right ? "OO" : "DILI";
             case LESS:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() < ((Number)right).doubleValue() ? "OO" : "DILI";
+                return (Double)left < (Double)right ? "OO" : "DILI";
             case LESS_EQUAL:
                 checkNumberOperands(expr.operator, left, right);
-                return ((Number)left).doubleValue() <= ((Number)right).doubleValue() ? "OO" : "DILI";
+                return (Double)left <= (Double)right ? "OO" : "DILI";
             case EQUAL:
                 if (left instanceof Character && right instanceof Character) {
                     return ((Character)left).equals((Character)right) ? "OO" : "DILI";
@@ -96,11 +104,14 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
                 if (left instanceof Character && right instanceof Character) {
                     return !((Character)left).equals((Character)right) ? "OO" : "DILI";
                 }
+                if ((left instanceof Double && right instanceof Character) || (left instanceof Character && right instanceof Double)) {
+                    throw new RuntimeException("Cannot compare number with character.");
+                }
                 return !isEqual(left, right) ? "OO" : "DILI";
             case UG:
-                return (isTruthy(left) && isTruthy(right)) ? "OO" : "DILI";
+                return isTruthy(left) && isTruthy(right) ? "OO" : "DILI";
             case O:
-                return (isTruthy(left) || isTruthy(right)) ? "OO" : "DILI";
+                return isTruthy(left) || isTruthy(right) ? "OO" : "DILI";
         }
         return null;
     }
@@ -116,7 +127,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     public Object visitAssignExpr(Parser.Expr.Assign expr) {
         Object value = evaluate(expr.value);
         System.out.println("DEBUG: Assigning " + expr.name.lexeme + " = " + value);
-        environment.put(expr.name.lexeme, value instanceof Number ? ((Number)value).doubleValue() : value);
+        environment.put(expr.name.lexeme, value);
         return value;
     }
 
@@ -132,17 +143,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
         for (Parser.Expr expr : stmt.expressions) {
             Object value = evaluate(expr);
             System.out.println("DEBUG: Printing value: " + value);
-            if (value instanceof String) {
-                if (value.equals("#")) {
-                    output.append("#");
-                } else if (value.equals("\n")) {
-                    output.append("\n");
-                } else {
-                    output.append(value);
-                }
-            } else {
-                output.append(stringify(value));
-            }
+            output.append(stringify(value));
         }
         System.out.print(output.toString());
         return null;
@@ -156,19 +157,16 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
             value = evaluate(stmt.initializer);
             System.out.println("DEBUG: Initializing " + stmt.name.lexeme + " with value: " + value);
         } else {
-            switch (stmt.name.varType) {
-                case NUMERO:
-                    value = 0.0;
-                    System.out.println("DEBUG: Using default NUMERO value: 0.0");
-                    break;
-                case TINUOD:
-                    value = false;
-                    System.out.println("DEBUG: Using default TINUOD value: false");
-                    break;
-                case LETRA:
-                    value = "";
-                    System.out.println("DEBUG: Using default LETRA value: ''");
-                    break;
+            TokenType varType = parser.getVariableTypes().getOrDefault(stmt.name.lexeme, null);
+            if (varType == TokenType.NUMERO) {
+                value = 0.0;
+                System.out.println("DEBUG: Using default NUMERO value: 0.0");
+            } else if (varType == TokenType.TINUOD) {
+                value = "DILI";
+                System.out.println("DEBUG: Using default TINUOD value: DILI");
+            } else if (varType == TokenType.LETRA) {
+                value = "";
+                System.out.println("DEBUG: Using default LETRA value: ''");
             }
         }
         environment.put(stmt.name.lexeme, value);
@@ -186,7 +184,6 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     public Void visitIfStmt(Parser.Stmt.If stmt) {
         Object condition = evaluate(stmt.condition);
         System.out.println("DEBUG: If condition evaluated to: " + condition);
-        System.out.println("DEBUG: isTruthy(" + condition + ") = " + isTruthy(condition));
         if (isTruthy(condition)) {
             System.out.println("DEBUG: Executing then branch");
             execute(stmt.thenBranch);
@@ -225,16 +222,39 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
             Object typedValue;
 
             try {
-                typedValue = Double.parseDouble(value);
-            } catch (NumberFormatException e) {
-                if (value.length() == 1) {
-                    typedValue = value.charAt(0);
+                TokenType varType = parser.getVariableTypes().getOrDefault(variable.lexeme, null);
+                if (varType == TokenType.NUMERO) {
+                    typedValue = Double.parseDouble(value);
+                    System.out.println("DEBUG: Parsed NUMERO input as Double: " + typedValue);
+                } else if (varType == TokenType.TINUOD) {
+                    typedValue = value.equalsIgnoreCase("OO") ? "OO" : "DILI";
+                    System.out.println("DEBUG: Parsed TINUOD input as String: " + typedValue);
+                } else if (varType == TokenType.LETRA) {
+                    if (value.length() == 1 && Character.isLetter(value.charAt(0))) {
+                        typedValue = value.charAt(0);
+                        System.out.println("DEBUG: Parsed LETRA input as Character: " + typedValue);
+                    } else {
+                        throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a letter.");
+                    }
                 } else {
                     typedValue = value;
+                    System.out.println("DEBUG: Parsed input as String: " + typedValue);
+                }
+            } catch (NumberFormatException e) {
+                TokenType varType = parser.getVariableTypes().getOrDefault(variable.lexeme, null);
+                if (varType == TokenType.LETRA) {
+                    if (value.length() == 1 && Character.isLetter(value.charAt(0))) {
+                        typedValue = value.charAt(0);
+                        System.out.println("DEBUG: Parsed LETRA input as Character (fallback): " + typedValue);
+                    } else {
+                        throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a letter.");
+                    }
+                } else {
+                    throw new RuntimeException("Invalid input format for variable " + variable.lexeme + ": " + value);
                 }
             }
 
-            System.out.println("DEBUG: Assigning " + variable.lexeme + " = " + typedValue);
+            System.out.println("DEBUG: Assigning " + variable.lexeme + " = " + typedValue + " (" + typedValue.getClass().getName() + ")");
             environment.put(variable.lexeme, typedValue);
         }
 
@@ -269,76 +289,57 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     }
 
     private boolean isTruthy(Object object) {
-        if (object == null) {
-            System.out.println("DEBUG: isTruthy(null) = false");
-            return false;
-        }
-        if (object instanceof Boolean) {
-            boolean result = (Boolean)object;
-            System.out.println("DEBUG: isTruthy(" + object + ") = " + result);
-            return result;
-        }
+        if (object == null) return false;
         if (object instanceof String) {
-            String str = (String)object;
-            boolean result = str.equals("OO");
-            System.out.println("DEBUG: isTruthy(" + str + ") = " + result);
-            return result;
+            return object.equals("OO");
         }
-        if (object instanceof Number) {
-            boolean result = ((Number)object).doubleValue() != 0.0;
-            System.out.println("DEBUG: isTruthy(" + object + ") = " + result);
-            return result;
+        if (object instanceof Double) {
+            return (Double)object != 0.0;
         }
         if (object instanceof Character) {
-            System.out.println("DEBUG: isTruthy(" + object + ") = true");
             return true;
         }
-        System.out.println("DEBUG: isTruthy(" + object + ") = true");
         return true;
     }
 
     private boolean isEqual(Object a, Object b) {
         if (a == null && b == null) return true;
         if (a == null) return false;
-        if (a instanceof Boolean && b instanceof Boolean) {
-            return ((Boolean)a).equals((Boolean)b);
-        }
         if (a instanceof String && b instanceof String) {
             return ((String)a).equals((String)b);
         }
-        if (a instanceof Number && b instanceof Number) {
-            return ((Number)a).doubleValue() == ((Number)b).doubleValue();
+        if (a instanceof Double && b instanceof Double) {
+            return ((Double)a).equals((Double)b);
         }
         if (a instanceof Character && b instanceof Character) {
             return ((Character)a).equals((Character)b);
         }
-        return false;
+        return a.equals(b);
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
-        if (operand instanceof Number) return;
+        if (operand instanceof Double) return;
         throw new RuntimeException("Operand must be a number.");
     }
 
     private void checkNumberOperands(Token operator, Object left, Object right) {
-        if ((left instanceof Number) && (right instanceof Number)) return;
+        if (left instanceof Double && right instanceof Double) return;
         throw new RuntimeException("Operands must be numbers.");
     }
 
     private String stringify(Object object) {
         if (object == null) return "nil";
-        if (object instanceof Boolean) {
-            return (Boolean)object ? "OO" : "DILI";
+        if (object instanceof String) {
+            if (object.equals("OO")) return "OO";
+            if (object.equals("DILI")) return "DILI";
+            return (String)object;
         }
-        if (object instanceof Number) {
-            String text = String.valueOf(((Number)object).doubleValue());
+        if (object instanceof Double) {
+            String text = object.toString();
             if (text.endsWith(".0")) {
                 text = text.substring(0, text.length() - 2);
             }
             return text;
-        }
-        if (object instanceof Character) {
-            return String.valueOf(object);
         }
         return object.toString();
     }

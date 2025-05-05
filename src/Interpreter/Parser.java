@@ -5,6 +5,7 @@ import java.util.*;
 public class Parser {
     private final List<Token> tokens;
     private int current = 0;
+    private final Map<String, TokenType> variableTypes = new HashMap<>();
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -25,6 +26,10 @@ public class Parser {
         }
         System.out.println("DEBUG: Parsed " + statements.size() + " statements");
         return statements;
+    }
+
+    public Map<String, TokenType> getVariableTypes() {
+        return variableTypes;
     }
 
     private Stmt declaration() {
@@ -84,7 +89,7 @@ public class Parser {
         do {
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
             variables.add(name);
-            System.out.println("DEBUG: Added variable to input: " + name.lexeme);
+            System.out.println("DEBUG: Added variable to input: " + name.lexeme + " with varType: " + variableTypes.getOrDefault(name.lexeme, null));
         } while (match(TokenType.COMMA));
         System.out.println("DEBUG: Input statement parsed with " + variables.size() + " variables");
         return new Stmt.Input(variables);
@@ -249,7 +254,11 @@ public class Parser {
         do {
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
             System.out.println("DEBUG: Found variable name: " + name.lexeme);
-            name.varType = type;  // Store the type for later use
+            // Store type in variableTypes map instead of name.varType
+            if (type != null) {
+                variableTypes.put(name.lexeme, type);
+                System.out.println("DEBUG: Registered variable " + name.lexeme + " with type " + type);
+            }
 
             // Handle the initializer
             Expr initializer = null;
@@ -266,8 +275,8 @@ public class Parser {
                     initializer = new Expr.Literal("DILI");
                     System.out.println("DEBUG: Using default TINUOD value: DILI");
                 } else if (type == TokenType.LETRA) {
-                    initializer = new Expr.Literal('\0');
-                    System.out.println("DEBUG: Using default LETRA value: \\0");
+                    initializer = new Expr.Literal("");
+                    System.out.println("DEBUG: Using default LETRA value: ''");
                 }
             }
 
@@ -422,7 +431,9 @@ public class Parser {
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
             System.out.println("DEBUG: Parsed identifier: " + name.lexeme + " at token: " + name);
-            if (match(TokenType.PLUS, TokenType.PLUS)) {
+            if (check(TokenType.PLUS) && peekNext() != null && peekNext().type == TokenType.PLUS) {
+                advance(); // Consume first PLUS
+                advance(); // Consume second PLUS
                 System.out.println("DEBUG: Parsed increment: " + name.lexeme + "++");
                 return new Expr.Assign(name, new Expr.Binary(
                         new Expr.Variable(name),
@@ -606,7 +617,7 @@ public class Parser {
             R visitVarStmt(Var stmt);
             R visitBlockStmt(Block stmt);
             R visitIfStmt(If stmt);
-            R visitWhileStmt(While stmt); // Already defined in Visitor
+            R visitWhileStmt(While stmt);
             R visitInputStmt(Input stmt);
         }
 
