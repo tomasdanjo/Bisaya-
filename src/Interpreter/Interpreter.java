@@ -229,7 +229,13 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
                     typedValue = Double.parseDouble(value);
                     BisayaMain.printDebug("DEBUG: Parsed NUMERO input as Double: " + typedValue);
                 } else if (varType == TokenType.TINUOD) {
-                    typedValue = value.equalsIgnoreCase("OO") ? "OO" : "DILI";
+                    if (value.equalsIgnoreCase("OO")) {
+                        typedValue = "OO";
+                    } else if (value.equalsIgnoreCase("DILI")) {
+                        typedValue = "DILI";
+                    } else {
+                        throw new RuntimeException("Invalid input for TINUOD variable '" + variable.lexeme + "': '" + value + "' is not 'OO' or 'DILI'.");
+                    }
                     BisayaMain.printDebug("DEBUG: Parsed TINUOD input as String: " + typedValue);
                 } else if (varType == TokenType.LETRA) {
                     if (value.length() == 1) {
