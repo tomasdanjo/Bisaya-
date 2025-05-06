@@ -27,3 +27,15 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Ignore IntelliJ files
+.idea/
+*.iml
+
+# Ignore compiled Java classes
+out/
+*.class
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
