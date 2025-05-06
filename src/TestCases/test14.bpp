@@ -1,0 +1,9 @@
+SUGOD
+	MUGNA NUMERO a = 3, b = 4, c, d
+	MUGNA TINUOD e
+	DAWAT: c
+	d = (3 + 4) * c
+	e = d > c
+	IPAKITA: d
+	IPAKITA: e
+KATAPUSAN
