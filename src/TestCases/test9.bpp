@@ -1,5 +1,5 @@
 SUGOD
-	MUGNA LETRA m = 'a'
-	MUGNA LETRA n = 'b'
+	MUGNA NUMERO m = 'a'
+	MUGNA TIPIK n = 'b'
 	IPAKITA: m & n
 KATAPUSAN

@@ -160,7 +160,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
             BisayaMain.printDebug("DEBUG: Initializing " + stmt.name.lexeme + " with value: " + value);
         } else {
             TokenType varType = parser.getVariableTypes().getOrDefault(stmt.name.lexeme, null);
-            if (varType == TokenType.NUMERO) {
+            if (varType == TokenType.NUMERO || varType == TokenType.TIPIK) {
                 value = 0.0;
                 BisayaMain.printDebug("DEBUG: Using default NUMERO value: 0.0");
             } else if (varType == TokenType.TINUOD) {

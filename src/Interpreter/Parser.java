@@ -253,7 +253,7 @@ public class Parser {
     private Stmt varDeclaration() {
         printDebug("DEBUG: Parsing variable declaration");
         TokenType type = null;
-        if (match(TokenType.NUMERO, TokenType.TINUOD, TokenType.LETRA)) {
+        if (match(TokenType.NUMERO, TokenType.TINUOD, TokenType.LETRA, TokenType.TIPIK)) {
             type = previous().type;
             printDebug("DEBUG: Found type declaration: " + type);
         }
@@ -276,9 +276,9 @@ public class Parser {
                 printDebug("DEBUG: Parsed initializer: " + initializer);
             } else {
                 // Initialize with default value based on type
-                if (type == TokenType.NUMERO) {
+                if (type == TokenType.NUMERO || type == TokenType.TIPIK) {
                     initializer = new Expr.Literal(0.0);
-                    printDebug("DEBUG: Using default NUMERO value: 0.0");
+                    printDebug("DEBUG: Using default NUMERO/TIPIK value: 0.0");
                 } else if (type == TokenType.TINUOD) {
                     initializer = new Expr.Literal("DILI");
                     printDebug("DEBUG: Using default TINUOD value: DILI");
@@ -424,11 +424,7 @@ public class Parser {
            printDebug("DEBUG Parsed TINUOD");
             return new Expr.Literal(true);
         }
-        if (match(TokenType.TIPIK)) {
-           printDebug("DEBUG Parsed TIPIK");
-            return new Expr.Literal(false);
-        }
-        if (match(TokenType.NUMERO, TokenType.STRING, TokenType.CHAR)) {
+        if (match(TokenType.NUMERO, TokenType.STRING, TokenType.CHAR, TokenType.TIPIK)) {
            printDebug("DEBUG Parsed literal: " + previous().literal + " at token: " + previous());
             return new Expr.Literal(previous().literal);
         }
