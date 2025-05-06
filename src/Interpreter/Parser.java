@@ -399,7 +399,7 @@ public class Parser {
 
     private Expr unary() {
         System.out.println("DEBUG: Entering unary, current token: " + peek() + ", position: " + current);
-        if (match(TokenType.MINUS, TokenType.NOT)) {
+        if (match(TokenType.MINUS, TokenType.DILI)) {
             Token operator = previous();
             System.out.println("DEBUG: Unary operator: " + operator);
             Expr right = unary();

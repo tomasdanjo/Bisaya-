@@ -41,8 +41,8 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
             case MINUS:
                 checkNumberOperand(expr.operator, right);
                 return -(double)right;
-            case NOT:
-                return !isTruthy(right);
+            case DILI:
+                return isTruthy(right) ? "DILI" : "OO";
         }
 
         return null;

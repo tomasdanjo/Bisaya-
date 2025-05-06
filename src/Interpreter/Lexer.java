@@ -106,10 +106,16 @@ public class Lexer {
                 character();
                 break;
             case '[':
-                if (match('#') && match(']')) {
-                    addToken(TokenType.STRING, "#");
+                if (!isAtEnd()) {
+                    char escapedChar = advance();
+
+                    if (match(']')) {
+                        addToken(TokenType.STRING, String.valueOf(escapedChar));
+                    } else {
+                        throw new RuntimeException("Expect ']' after escape character.");
+                    }
                 } else {
-                    throw new RuntimeException("Unexpected character: [");
+                    throw new RuntimeException("Unexpected end of input after '['.");
                 }
                 break;
             case '$':
