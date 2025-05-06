@@ -2,7 +2,10 @@ package Interpreter;
 
 import java.util.*;
 
+import static Interpreter.BisayaMain.printDebug;
+
 public class Parser {
+    private static final boolean DEBUG = BisayaMain.DEBUG;
     private final List<Token> tokens;
     private int current = 0;
     private final Map<String, TokenType> variableTypes = new HashMap<>();
@@ -12,6 +15,8 @@ public class Parser {
     }
 
     public List<Stmt> parse() {
+        printDebug("Starting parsing...");
+
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
             try {
@@ -20,11 +25,11 @@ public class Parser {
                     statements.add(stmt);
                 }
             } catch (RuntimeException error) {
-                System.out.println("DEBUG: Error parsing statement: " + error.getMessage());
+                printDebug("DEBUG: Error parsing statement: " + error.getMessage());
                 synchronize();
             }
         }
-        System.out.println("DEBUG: Parsed " + statements.size() + " statements");
+        printDebug("DEBUG: Parsed " + statements.size() + " statements");
         return statements;
     }
 
@@ -38,7 +43,7 @@ public class Parser {
             if (match(TokenType.MUGNA)) return varDeclaration();
             return statement();
         } catch (RuntimeException error) {
-            System.out.println("DEBUG: Error in declaration: " + error.getMessage());
+            printDebug("DEBUG: Error in declaration: " + error.getMessage());
             synchronize();
             return null;
         }
@@ -49,52 +54,52 @@ public class Parser {
         if (match(TokenType.DAWAT)) return inputStatement();
         if (match(TokenType.KUNG)) return ifStatement();
         if (match(TokenType.PUNDOK)) {
-            System.out.println("DEBUG: Found PUNDOK");
+            printDebug("DEBUG: Found PUNDOK");
             consume(TokenType.LBRACE, "Expect '{' after PUNDOK.");
             List<Stmt> statements = new ArrayList<>();
             while (!check(TokenType.RBRACE) && !isAtEnd()) {
                 Stmt stmt = statement();
                 if (stmt != null) {
                     statements.add(stmt);
-                    System.out.println("DEBUG: Added statement to block: " + stmt);
+                    printDebug("DEBUG: Added statement to block: " + stmt);
                 }
             }
             consume(TokenType.RBRACE, "Expect '}' after block.");
             return new Stmt.Block(statements);
         }
         if (match(TokenType.ALANG_SA)) {
-            System.out.println("DEBUG: Found ALANG SA statement");
+            printDebug("DEBUG: Found ALANG SA statement");
             return whileStatement();
         }
         return expressionStatement();
     }
 
     private Stmt printStatement() {
-        System.out.println("DEBUG: Parsing print statement");
+        printDebug("DEBUG: Parsing print statement");
         consume(TokenType.COLON, "Expect ':' after IPAKITA.");
         List<Expr> expressions = new ArrayList<>();
         do {
             Expr expr = expression();
             expressions.add(expr);
-            System.out.println("DEBUG: Added expression to print: " + expr);
+            printDebug("DEBUG: Added expression to print: " + expr);
         } while (match(TokenType.CONCAT));
         if (check(TokenType.IDENTIFIER) || check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.COMMA)) {
             throw new Error("Expected concatenation operator");
         }
-        System.out.println("DEBUG: Print statement parsed with " + expressions.size() + " expressions");
+        printDebug("DEBUG: Print statement parsed with " + expressions.size() + " expressions");
         return new Stmt.Print(expressions);
     }
 
     private Stmt inputStatement() {
-        System.out.println("DEBUG: Parsing input statement");
+        printDebug("DEBUG: Parsing input statement");
         consume(TokenType.COLON, "Expect ':' after DAWAT.");
         List<Token> variables = new ArrayList<>();
         do {
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
             variables.add(name);
-            System.out.println("DEBUG: Added variable to input: " + name.lexeme + " with varType: " + variableTypes.getOrDefault(name.lexeme, null));
+            printDebug("DEBUG: Added variable to input: " + name.lexeme + " with varType: " + variableTypes.getOrDefault(name.lexeme, null));
         } while (match(TokenType.COMMA));
-        System.out.println("DEBUG: Input statement parsed with " + variables.size() + " variables");
+        printDebug("DEBUG: Input statement parsed with " + variables.size() + " variables");
         return new Stmt.Input(variables);
     }
 
@@ -125,34 +130,34 @@ public class Parser {
     }
 
     private Stmt block() {
-        System.out.println("DEBUG: Parsing block");
+        printDebug("DEBUG: Parsing block");
         List<Stmt> statements = new ArrayList<>();
         while (!check(TokenType.KATAPUSAN) && !isAtEnd()) {
             Stmt stmt = declaration();
             if (stmt != null) {
                 statements.add(stmt);
-                System.out.println("DEBUG: Added statement to block: " + stmt);
+                printDebug("DEBUG: Added statement to block: " + stmt);
             }
         }
         consume(TokenType.KATAPUSAN, "Expect 'KATAPUSAN' after block.");
-        System.out.println("DEBUG: Block parsed with " + statements.size() + " statements");
+        printDebug("DEBUG: Block parsed with " + statements.size() + " statements");
         return new Stmt.Block(statements);
     }
 
     private Stmt whileStatement() {
-        System.out.println("DEBUG: Starting while statement parsing");
+        printDebug("DEBUG: Starting while statement parsing");
         consume(TokenType.LPAREN, "Expect '(' after 'ALANG SA'.");
-        System.out.println("DEBUG: Found opening parenthesis");
+        printDebug("DEBUG: Found opening parenthesis");
 
         // Parse initialization
         Stmt initializer;
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
-            System.out.println("DEBUG: Found identifier: " + name.lexeme);
+            printDebug("DEBUG: Found identifier: " + name.lexeme);
             if (match(TokenType.ASSIGN)) {
-                System.out.println("DEBUG: Found assignment operator");
+                printDebug("DEBUG: Found assignment operator");
                 Expr value = expression();
-                System.out.println("DEBUG: Parsed initializer value: " + value);
+                printDebug("DEBUG: Parsed initializer value: " + value);
                 initializer = new Stmt.Expression(new Expr.Assign(name, value));
             } else {
                 throw new RuntimeException("Expect '=' after variable name.");
@@ -160,82 +165,82 @@ public class Parser {
         } else {
             initializer = expressionStatement();
         }
-        System.out.println("DEBUG: Parsed initializer: " + initializer);
+        printDebug("DEBUG: Parsed initializer: " + initializer);
 
         // Parse condition
-        System.out.println("DEBUG: Looking for comma");
+        printDebug("DEBUG: Looking for comma");
         consume(TokenType.COMMA, "Expect ',' after initialization.");
-        System.out.println("DEBUG: Found comma, parsing condition");
+        printDebug("DEBUG: Found comma, parsing condition");
         Expr condition = expression();
-        System.out.println("DEBUG: Parsed condition: " + condition);
+        printDebug("DEBUG: Parsed condition: " + condition);
 
         // Parse increment
-        System.out.println("DEBUG: Looking for second comma");
+        printDebug("DEBUG: Looking for second comma");
         consume(TokenType.COMMA, "Expect ',' after condition.");
-        System.out.println("DEBUG: Found second comma, parsing increment");
+        printDebug("DEBUG: Found second comma, parsing increment");
         Expr increment = null;
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
-            System.out.println("DEBUG: Found identifier for increment: " + name.lexeme);
+            printDebug("DEBUG: Found identifier for increment: " + name.lexeme);
             // Manually check for ++ to control token pointer
             if (check(TokenType.PLUS) && peekNext() != null && peekNext().type == TokenType.PLUS) {
                 advance(); // Consume first PLUS
                 advance(); // Consume second PLUS
-                System.out.println("DEBUG: Found ++ operator");
+                printDebug("DEBUG: Found ++ operator");
                 increment = new Expr.Assign(name, new Expr.Binary(
                         new Expr.Variable(name),
                         new Token(TokenType.PLUS, "+", null, name.line),
                         new Expr.Literal(1.0)
                 ));
-                System.out.println("DEBUG: Created increment expression: " + name.lexeme + "++");
+                printDebug("DEBUG: Created increment expression: " + name.lexeme + "++");
             }
         }
         if (increment == null) {
             throw new RuntimeException("Expect increment after comma.");
         }
-        System.out.println("DEBUG: Looking for closing parenthesis, current token: " + peek());
+        printDebug("DEBUG: Looking for closing parenthesis, current token: " + peek());
         consume(TokenType.RPAREN, "Expect ')' after for clauses.");
-        System.out.println("DEBUG: Found closing parenthesis");
+        printDebug("DEBUG: Found closing parenthesis");
 
         // Parse body
-        System.out.println("DEBUG: Parsing loop body");
+        printDebug("DEBUG: Parsing loop body");
         Stmt body;
         if (match(TokenType.PUNDOK)) {
-            System.out.println("DEBUG: Found PUNDOK");
+            printDebug("DEBUG: Found PUNDOK");
             consume(TokenType.LBRACE, "Expect '{' after PUNDOK.");
-            System.out.println("DEBUG: Found opening brace");
+            printDebug("DEBUG: Found opening brace");
             List<Stmt> statements = new ArrayList<>();
             while (!check(TokenType.RBRACE) && !isAtEnd()) {
                 Stmt stmt = statement();
                 if (stmt != null) {
                     statements.add(stmt);
-                    System.out.println("DEBUG: Added statement to block: " + stmt);
+                    printDebug("DEBUG: Added statement to block: " + stmt);
                 }
             }
             consume(TokenType.RBRACE, "Expect '}' after block.");
-            System.out.println("DEBUG: Found closing brace");
+            printDebug("DEBUG: Found closing brace");
             body = new Stmt.Block(statements);
         } else {
             body = statement();
         }
-        System.out.println("DEBUG: Parsed body: " + body);
+        printDebug("DEBUG: Parsed body: " + body);
 
         // Create a block that contains the increment after the body
         List<Stmt> bodyStatements = new ArrayList<>();
         bodyStatements.add(body);
         bodyStatements.add(new Stmt.Expression(increment));
         Stmt bodyWithIncrement = new Stmt.Block(bodyStatements);
-        System.out.println("DEBUG: Created body with increment");
+        printDebug("DEBUG: Created body with increment");
 
         // Create the while loop
         Stmt whileLoop = new Stmt.While(condition, bodyWithIncrement);
-        System.out.println("DEBUG: Created while loop");
+        printDebug("DEBUG: Created while loop");
 
         // Create a block that contains the initializer and the while loop
         List<Stmt> statements = new ArrayList<>();
         statements.add(initializer);
         statements.add(whileLoop);
-        System.out.println("DEBUG: Created final block with initializer and while loop");
+        printDebug("DEBUG: Created final block with initializer and while loop");
         return new Stmt.Block(statements);
     }
 
@@ -246,40 +251,40 @@ public class Parser {
     }
 
     private Stmt varDeclaration() {
-        System.out.println("DEBUG: Parsing variable declaration");
+        printDebug("DEBUG: Parsing variable declaration");
         TokenType type = null;
         if (match(TokenType.NUMERO, TokenType.TINUOD, TokenType.LETRA)) {
             type = previous().type;
-            System.out.println("DEBUG: Found type declaration: " + type);
+            printDebug("DEBUG: Found type declaration: " + type);
         }
 
         List<Stmt> declarations = new ArrayList<>();
         do {
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
-            System.out.println("DEBUG: Found variable name: " + name.lexeme);
+            printDebug("DEBUG: Found variable name: " + name.lexeme);
             // Store type in variableTypes map instead of name.varType
             if (type != null) {
                 variableTypes.put(name.lexeme, type);
-                System.out.println("DEBUG: Registered variable " + name.lexeme + " with type " + type);
+                printDebug("DEBUG: Registered variable " + name.lexeme + " with type " + type);
             }
 
             // Handle the initializer
             Expr initializer = null;
             if (match(TokenType.ASSIGN)) {
-                System.out.println("DEBUG: Found assignment operator");
+                printDebug("DEBUG: Found assignment operator");
                 initializer = expression();
-                System.out.println("DEBUG: Parsed initializer: " + initializer);
+                printDebug("DEBUG: Parsed initializer: " + initializer);
             } else {
                 // Initialize with default value based on type
                 if (type == TokenType.NUMERO) {
                     initializer = new Expr.Literal(0.0);
-                    System.out.println("DEBUG: Using default NUMERO value: 0.0");
+                    printDebug("DEBUG: Using default NUMERO value: 0.0");
                 } else if (type == TokenType.TINUOD) {
                     initializer = new Expr.Literal("DILI");
-                    System.out.println("DEBUG: Using default TINUOD value: DILI");
+                    printDebug("DEBUG: Using default TINUOD value: DILI");
                 } else if (type == TokenType.LETRA) {
                     initializer = new Expr.Literal("");
-                    System.out.println("DEBUG: Using default LETRA value: ''");
+                    printDebug("DEBUG: Using default LETRA value: ''");
                 }
             }
 
@@ -300,24 +305,24 @@ public class Parser {
 
     private Expr expression() {
         try {
-            System.out.println("DEBUG: Starting expression parsing at token: " + peek());
+            printDebug("DEBUG: Starting expression parsing at token: " + peek());
             Expr expr = assignment();
-            System.out.println("DEBUG: Successfully parsed expression: " + expr);
+            printDebug("DEBUG: Successfully parsed expression: " + expr);
             return expr;
         } catch (RuntimeException e) {
-            System.out.println("DEBUG: Error in expression(): " + e.getMessage() + " at token: " + peek());
+            printDebug("DEBUG: Error in expression(): " + e.getMessage() + " at token: " + peek());
             throw e;
         }
     }
 
     private Expr assignment() {
         Expr expr = logical();
-        System.out.println("DEBUG: Logical expression: " + expr);
+        printDebug("DEBUG: Logical expression: " + expr);
         while (match(TokenType.ASSIGN)) {
             Token equals = previous();
-            System.out.println("DEBUG: Parsing assignment with operator: " + equals);
+            printDebug("DEBUG: Parsing assignment with operator: " + equals);
             Expr value = assignment();
-            System.out.println("DEBUG: Assignment value: " + value);
+            printDebug("DEBUG: Assignment value: " + value);
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
@@ -329,115 +334,115 @@ public class Parser {
 
     private Expr logical() {
         Expr expr = equality();
-        System.out.println("DEBUG: Logical expression: " + expr);
+        printDebug("DEBUG: Logical expression: " + expr);
         while (match(TokenType.UG, TokenType.O)) {
             Token operator = previous();
-            System.out.println("DEBUG: Logical operator: " + operator);
+            printDebug("DEBUG: Logical operator: " + operator);
             Expr right = equality();
-            System.out.println("DEBUG: Logical right: " + right);
+            printDebug("DEBUG: Logical right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
-        System.out.println("DEBUG: Logical returning: " + expr);
+        printDebug("DEBUG: Logical returning: " + expr);
         return expr;
     }
 
     private Expr equality() {
         Expr expr = comparison();
-        System.out.println("DEBUG: Equality expression: " + expr);
+        printDebug("DEBUG: Equality expression: " + expr);
         while (match(TokenType.EQUAL, TokenType.NOT_EQUAL)) {
             Token operator = previous();
-            System.out.println("DEBUG: Equality operator: " + operator);
+            printDebug("DEBUG: Equality operator: " + operator);
             Expr right = comparison();
-            System.out.println("DEBUG: Equality right: " + right);
+            printDebug("DEBUG: Equality right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
-        System.out.println("DEBUG: Equality returning: " + expr);
+       printDebug("DEBUG Equality returning: " + expr);
         return expr;
     }
 
     private Expr comparison() {
-        System.out.println("DEBUG: Entering comparison, current token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Entering comparison, current token: " + peek() + ", position: " + current);
         Expr expr = term();
-        System.out.println("DEBUG: Comparison term: " + expr);
+       printDebug("DEBUG Comparison term: " + expr);
         while (match(TokenType.LESS, TokenType.LESS_EQUAL, TokenType.GREATER, TokenType.GREATER_EQUAL)) {
             Token operator = previous();
-            System.out.println("DEBUG: Comparison operator: " + operator);
+           printDebug("DEBUG Comparison operator: " + operator);
             Expr right = term();
-            System.out.println("DEBUG: Comparison right: " + right);
+           printDebug("DEBUG Comparison right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
-        System.out.println("DEBUG: Comparison returning: " + expr + ", next token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Comparison returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr term() {
-        System.out.println("DEBUG: Entering term, current token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Entering term, current token: " + peek() + ", position: " + current);
         Expr expr = factor();
-        System.out.println("DEBUG: Term factor: " + expr);
+       printDebug("DEBUG Term factor: " + expr);
         while (match(TokenType.PLUS, TokenType.MINUS, TokenType.CONCAT)) {
             Token operator = previous();
-            System.out.println("DEBUG: Term operator: " + operator);
+           printDebug("DEBUG Term operator: " + operator);
             Expr right = factor();
-            System.out.println("DEBUG: Term right: " + right);
+           printDebug("DEBUG Term right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
-        System.out.println("DEBUG: Term returning: " + expr + ", next token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Term returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr factor() {
-        System.out.println("DEBUG: Entering factor, current token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Entering factor, current token: " + peek() + ", position: " + current);
         Expr expr = unary();
-        System.out.println("DEBUG: Factor unary: " + expr);
+       printDebug("DEBUG Factor unary: " + expr);
         while (match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
             Token operator = previous();
-            System.out.println("DEBUG: Factor operator: " + operator);
+           printDebug("DEBUG Factor operator: " + operator);
             Expr right = unary();
-            System.out.println("DEBUG: Factor right: " + right);
+           printDebug("DEBUG Factor right: " + right);
             expr = new Expr.Binary(expr, operator, right);
         }
-        System.out.println("DEBUG: Factor returning: " + expr + ", next token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Factor returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr unary() {
-        System.out.println("DEBUG: Entering unary, current token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Entering unary, current token: " + peek() + ", position: " + current);
         if (match(TokenType.MINUS, TokenType.DILI)) {
             Token operator = previous();
-            System.out.println("DEBUG: Unary operator: " + operator);
+           printDebug("DEBUG Unary operator: " + operator);
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
         Expr expr = primary();
-        System.out.println("DEBUG: Unary returning: " + expr + ", next token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Unary returning: " + expr + ", next token: " + peek() + ", position: " + current);
         return expr;
     }
 
     private Expr primary() {
-        System.out.println("DEBUG: Entering primary, current token: " + peek() + ", position: " + current);
+       printDebug("DEBUG Entering primary, current token: " + peek() + ", position: " + current);
         if (match(TokenType.TINUOD)) {
-            System.out.println("DEBUG: Parsed TINUOD");
+           printDebug("DEBUG Parsed TINUOD");
             return new Expr.Literal(true);
         }
         if (match(TokenType.TIPIK)) {
-            System.out.println("DEBUG: Parsed TIPIK");
+           printDebug("DEBUG Parsed TIPIK");
             return new Expr.Literal(false);
         }
         if (match(TokenType.NUMERO, TokenType.STRING, TokenType.CHAR)) {
-            System.out.println("DEBUG: Parsed literal: " + previous().literal + " at token: " + previous());
+           printDebug("DEBUG Parsed literal: " + previous().literal + " at token: " + previous());
             return new Expr.Literal(previous().literal);
         }
         if (match(TokenType.NEWLINE)) {
-            System.out.println("DEBUG: Parsed NEWLINE");
+           printDebug("DEBUG Parsed NEWLINE");
             return new Expr.Literal("\n");
         }
         if (match(TokenType.IDENTIFIER)) {
             Token name = previous();
-            System.out.println("DEBUG: Parsed identifier: " + name.lexeme + " at token: " + name);
+           printDebug("DEBUG Parsed identifier: " + name.lexeme + " at token: " + name);
             if (check(TokenType.PLUS) && peekNext() != null && peekNext().type == TokenType.PLUS) {
                 advance(); // Consume first PLUS
                 advance(); // Consume second PLUS
-                System.out.println("DEBUG: Parsed increment: " + name.lexeme + "++");
+               printDebug("DEBUG Parsed increment: " + name.lexeme + "++");
                 return new Expr.Assign(name, new Expr.Binary(
                         new Expr.Variable(name),
                         new Token(TokenType.PLUS, "+", null, name.line),
@@ -447,13 +452,13 @@ public class Parser {
             return new Expr.Variable(name);
         }
         if (match(TokenType.LPAREN)) {
-            System.out.println("DEBUG: Parsing grouped expression");
+           printDebug("DEBUG Parsing grouped expression");
             Expr expr = expression();
             consume(TokenType.RPAREN, "Expect ')' after expression.");
-            System.out.println("DEBUG: Parsed grouped expression: " + expr);
+           printDebug("DEBUG Parsed grouped expression: " + expr);
             return new Expr.Grouping(expr);
         }
-        System.out.println("DEBUG: Unexpected token in primary: " + peek());
+       printDebug("DEBUG Unexpected token in primary: " + peek());
         throw new RuntimeException("Expect expression at token: " + peek().type + " lexeme: " + peek().lexeme);
     }
 

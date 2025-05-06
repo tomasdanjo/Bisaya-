@@ -1,5 +1,6 @@
 SUGOD
 	MUGNA NUMERO a
+	IPAKITA: "Input number: "
 	DAWAT: a
 	KUNG (a<10)
 	PUNDOK{

@@ -5,6 +5,8 @@ import java.nio.file.*;
 import java.util.*;
 
 public class BisayaMain {
+    public static final boolean DEBUG = false;
+
     public static void main(String[] args) {
         if (args.length > 1) {
             System.out.println("Usage: java BisayaMain [script]");
@@ -14,6 +16,10 @@ public class BisayaMain {
         } else {
             runPrompt();
         }
+    }
+
+    public static void printDebug(String message){
+        if (DEBUG) System.out.println(message);
     }
 
     private static void runFile(String path) {
@@ -64,20 +70,17 @@ public class BisayaMain {
 
     private static void run(String source) {
         try {
-            System.out.println("Starting lexical analysis...");
+
             Lexer lexer = new Lexer(source);
             List<Token> tokens = lexer.scanTokens();
-            System.out.println("Tokens: " + tokens);
 
-            System.out.println("Starting parsing...");
+
+
             Parser parser = new Parser(tokens);
             List<Parser.Stmt> statements = parser.parse();
-            System.out.println("Parsed " + statements.size() + " statements");
 
-            System.out.println("Starting interpretation...");
             Interpreter interpreter = new Interpreter(parser);
             interpreter.interpret(statements);
-            System.out.println("Interpretation complete");
         } catch (RuntimeException e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();

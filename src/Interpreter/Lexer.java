@@ -2,6 +2,8 @@ package Interpreter;
 
 import java.util.*;
 
+import static Interpreter.BisayaMain.printDebug;
+
 public class Lexer {
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
@@ -37,12 +39,14 @@ public class Lexer {
     }
 
     public List<Token> scanTokens() {
+        printDebug("Starting lexical analysis...");
         while (!isAtEnd()) {
             start = current;
             scanToken();
         }
 
         tokens.add(new Token(TokenType.EOF, "", null, line));
+        printDebug("Tokens: " + tokens);
         return tokens;
     }
 

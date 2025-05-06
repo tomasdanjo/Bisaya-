@@ -7,17 +7,19 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     private Map<String, Object> environment = globals;
     private final Parser parser;
 
+    private static final boolean DEBUG = BisayaMain.DEBUG; // Set to true to enable debug logs
+
     public Interpreter(Parser parser) {
         this.parser = parser;
     }
 
     public void interpret(List<Parser.Stmt> statements) {
         try {
-            System.out.println("Starting interpretation...");
+            BisayaMain.printDebug("Starting interpretation...");
             for (Parser.Stmt statement : statements) {
                 execute(statement);
             }
-            System.out.println("Interpretation complete");
+            BisayaMain.printDebug("Interpretation complete");
         } catch (RuntimeException error) {
             throw error;
         }
@@ -53,7 +55,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
 
-        System.out.println("DEBUG: Binary operation " + expr.operator.type + " with left=" + left + " (" + left.getClass().getName() + ") right=" + right + " (" + right.getClass().getName() + ")");
+        BisayaMain.printDebug("DEBUG: Binary operation " + expr.operator.type + " with left=" + left + " (" + left.getClass().getName() + ") right=" + right + " (" + right.getClass().getName() + ")");
 
         switch (expr.operator.type) {
             case PLUS:
@@ -119,14 +121,14 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     @Override
     public Object visitVariableExpr(Parser.Expr.Variable expr) {
         Object value = lookUpVariable(expr.name);
-        System.out.println("DEBUG: Reading variable " + expr.name.lexeme + " with value " + value);
+        BisayaMain.printDebug("DEBUG: Reading variable " + expr.name.lexeme + " with value " + value);
         return value;
     }
 
     @Override
     public Object visitAssignExpr(Parser.Expr.Assign expr) {
         Object value = evaluate(expr.value);
-        System.out.println("DEBUG: Assigning " + expr.name.lexeme + " = " + value);
+        BisayaMain.printDebug("DEBUG: Assigning " + expr.name.lexeme + " = " + value);
         environment.put(expr.name.lexeme, value);
         return value;
     }
@@ -142,7 +144,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
         StringBuilder output = new StringBuilder();
         for (Parser.Expr expr : stmt.expressions) {
             Object value = evaluate(expr);
-            System.out.println("DEBUG: Printing value: " + value);
+            BisayaMain.printDebug("DEBUG: Printing value: " + value);
             output.append(stringify(value));
         }
         System.out.print(output.toString());
@@ -151,22 +153,22 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
 
     @Override
     public Void visitVarStmt(Parser.Stmt.Var stmt) {
-        System.out.println("DEBUG: Declaring variable " + stmt.name.lexeme);
+        BisayaMain.printDebug("DEBUG: Declaring variable " + stmt.name.lexeme);
         Object value = null;
         if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
-            System.out.println("DEBUG: Initializing " + stmt.name.lexeme + " with value: " + value);
+            BisayaMain.printDebug("DEBUG: Initializing " + stmt.name.lexeme + " with value: " + value);
         } else {
             TokenType varType = parser.getVariableTypes().getOrDefault(stmt.name.lexeme, null);
             if (varType == TokenType.NUMERO) {
                 value = 0.0;
-                System.out.println("DEBUG: Using default NUMERO value: 0.0");
+                BisayaMain.printDebug("DEBUG: Using default NUMERO value: 0.0");
             } else if (varType == TokenType.TINUOD) {
                 value = "DILI";
-                System.out.println("DEBUG: Using default TINUOD value: DILI");
+                BisayaMain.printDebug("DEBUG: Using default TINUOD value: DILI");
             } else if (varType == TokenType.LETRA) {
                 value = "";
-                System.out.println("DEBUG: Using default LETRA value: ''");
+                BisayaMain.printDebug("DEBUG: Using default LETRA value: ''");
             }
         }
         environment.put(stmt.name.lexeme, value);
@@ -175,7 +177,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
 
     @Override
     public Void visitBlockStmt(Parser.Stmt.Block stmt) {
-        System.out.println("DEBUG: Executing block with " + stmt.statements.size() + " statements");
+        BisayaMain.printDebug("DEBUG: Executing block with " + stmt.statements.size() + " statements");
         executeBlock(stmt.statements, environment);
         return null;
     }
@@ -183,12 +185,12 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
     @Override
     public Void visitIfStmt(Parser.Stmt.If stmt) {
         Object condition = evaluate(stmt.condition);
-        System.out.println("DEBUG: If condition evaluated to: " + condition);
+        BisayaMain.printDebug("DEBUG: If condition evaluated to: " + condition);
         if (isTruthy(condition)) {
-            System.out.println("DEBUG: Executing then branch");
+            BisayaMain.printDebug("DEBUG: Executing then branch");
             execute(stmt.thenBranch);
         } else if (stmt.elseBranch != null) {
-            System.out.println("DEBUG: Executing else branch");
+            BisayaMain.printDebug("DEBUG: Executing else branch");
             execute(stmt.elseBranch);
         }
         return null;
@@ -196,18 +198,18 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
 
     @Override
     public Void visitWhileStmt(Parser.Stmt.While stmt) {
-        System.out.println("DEBUG: Starting while loop");
+        BisayaMain.printDebug("DEBUG: Starting while loop");
         while (isTruthy(evaluate(stmt.condition))) {
-            System.out.println("DEBUG: While condition is true, executing body");
+            BisayaMain.printDebug("DEBUG: While condition is true, executing body");
             execute(stmt.body);
         }
-        System.out.println("DEBUG: While loop finished");
+        BisayaMain.printDebug("DEBUG: While loop finished");
         return null;
     }
 
     @Override
     public Void visitInputStmt(Parser.Stmt.Input stmt) {
-        System.out.println("DEBUG: Processing input statement");
+        BisayaMain.printDebug("DEBUG: Processing input statement");
         Scanner scanner = new Scanner(System.in);
         String input = scanner.nextLine();
         String[] values = input.split(",");
@@ -225,27 +227,27 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
                 TokenType varType = parser.getVariableTypes().getOrDefault(variable.lexeme, null);
                 if (varType == TokenType.NUMERO) {
                     typedValue = Double.parseDouble(value);
-                    System.out.println("DEBUG: Parsed NUMERO input as Double: " + typedValue);
+                    BisayaMain.printDebug("DEBUG: Parsed NUMERO input as Double: " + typedValue);
                 } else if (varType == TokenType.TINUOD) {
                     typedValue = value.equalsIgnoreCase("OO") ? "OO" : "DILI";
-                    System.out.println("DEBUG: Parsed TINUOD input as String: " + typedValue);
+                    BisayaMain.printDebug("DEBUG: Parsed TINUOD input as String: " + typedValue);
                 } else if (varType == TokenType.LETRA) {
                     if (value.length() == 1 && Character.isLetter(value.charAt(0))) {
                         typedValue = value.charAt(0);
-                        System.out.println("DEBUG: Parsed LETRA input as Character: " + typedValue);
+                        BisayaMain.printDebug("DEBUG: Parsed LETRA input as Character: " + typedValue);
                     } else {
                         throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a letter.");
                     }
                 } else {
                     typedValue = value;
-                    System.out.println("DEBUG: Parsed input as String: " + typedValue);
+                    BisayaMain.printDebug("DEBUG: Parsed input as String: " + typedValue);
                 }
             } catch (NumberFormatException e) {
                 TokenType varType = parser.getVariableTypes().getOrDefault(variable.lexeme, null);
                 if (varType == TokenType.LETRA) {
                     if (value.length() == 1 && Character.isLetter(value.charAt(0))) {
                         typedValue = value.charAt(0);
-                        System.out.println("DEBUG: Parsed LETRA input as Character (fallback): " + typedValue);
+                        BisayaMain.printDebug("DEBUG: Parsed LETRA input as Character (fallback): " + typedValue);
                     } else {
                         throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a letter.");
                     }
@@ -254,7 +256,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
                 }
             }
 
-            System.out.println("DEBUG: Assigning " + variable.lexeme + " = " + typedValue + " (" + typedValue.getClass().getName() + ")");
+            BisayaMain.printDebug("DEBUG: Assigning " + variable.lexeme + " = " + typedValue + " (" + typedValue.getClass().getName() + ")");
             environment.put(variable.lexeme, typedValue);
         }
 
