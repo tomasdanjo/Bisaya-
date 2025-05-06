@@ -77,7 +77,13 @@ public class Parser {
             Expr expr = expression();
             expressions.add(expr);
             System.out.println("DEBUG: Added expression to print: " + expr);
-        } while (match(TokenType.COMMA));
+        } while (match(TokenType.CONCAT));
+        if (!isAtEnd() &&
+                !check(TokenType.NEWLINE) &&
+                !check(TokenType.EOF) &&
+                !check(TokenType.KATAPUSAN)) {
+            throw new Error("Expected concatenation operator");
+        }
         System.out.println("DEBUG: Print statement parsed with " + expressions.size() + " expressions");
         return new Stmt.Print(expressions);
     }
