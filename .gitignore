@@ -39,3 +39,6 @@ out/
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+# Ignore all .log files
+*.log
