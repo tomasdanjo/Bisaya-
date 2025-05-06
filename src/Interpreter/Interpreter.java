@@ -232,11 +232,11 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
                     typedValue = value.equalsIgnoreCase("OO") ? "OO" : "DILI";
                     BisayaMain.printDebug("DEBUG: Parsed TINUOD input as String: " + typedValue);
                 } else if (varType == TokenType.LETRA) {
-                    if (value.length() == 1 && Character.isLetter(value.charAt(0))) {
+                    if (value.length() == 1) {
                         typedValue = value.charAt(0);
                         BisayaMain.printDebug("DEBUG: Parsed LETRA input as Character: " + typedValue);
                     } else {
-                        throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a letter.");
+                        throw new RuntimeException("Invalid input for LETRA variable '" + variable.lexeme + "': '" + value + "' is not a single character.");
                     }
                 } else {
                     typedValue = value;
