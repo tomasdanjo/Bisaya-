@@ -4,6 +4,6 @@ SUGOD
 	DAWAT: c
 	d = (3 + 4) * c
 	e = d > c
-	IPAKITA: d
+	IPAKITA: d & $
 	IPAKITA: e
 KATAPUSAN

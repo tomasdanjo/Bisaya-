@@ -260,6 +260,11 @@ public class Parser {
 
         List<Stmt> declarations = new ArrayList<>();
         do {
+            // Ensure next token is IDENTIFIER
+            if (check(TokenType.ASSIGN)) {
+                throw new Error("Expected variable name after comma");
+            }
+
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
             printDebug("DEBUG: Found variable name: " + name.lexeme);
             // Store type in variableTypes map instead of name.varType
@@ -274,6 +279,32 @@ public class Parser {
                 printDebug("DEBUG: Found assignment operator");
                 initializer = expression();
                 printDebug("DEBUG: Parsed initializer: " + initializer);
+
+                // Perform type checking
+                if (initializer instanceof Expr.Literal) {
+                    Object value = ((Expr.Literal) initializer).value;
+
+                    switch (type) {
+                        case LETRA:
+                            if (!(value instanceof Character)) {
+                                throw new Error("LETRA can only be assigned a character");
+                            }
+                            break;
+                        case NUMERO:
+                        case TIPIK:
+                            if (!(value instanceof Double)) {
+                                throw new Error("NUMERO or TIPIK can only be assigned a number.");
+                            }
+                            break;
+                        case TINUOD:
+                            if (!(value instanceof String && (value.equals("OO") || value.equals("DILI")))) {
+                                throw new Error("TINUOD must be 'OO' or 'DILI'.");
+                            }
+                            break;
+                    }
+                } else {
+                    printDebug("WARNING: Initializer is not a literal; type-checking skipped.");
+                }
             } else {
                 // Initialize with default value based on type
                 if (type == TokenType.NUMERO || type == TokenType.TIPIK) {
