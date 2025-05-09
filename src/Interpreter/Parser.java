@@ -9,7 +9,12 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
     private final Map<String, TokenType> variableTypes = new HashMap<>();
-
+    private static final Set<TokenType> KEYWORDS = new HashSet<>(Arrays.asList(
+            TokenType.SUGOD, TokenType.KATAPUSAN, TokenType.MUGNA, TokenType.NUMERO, TokenType.LETRA,
+            TokenType.TINUOD, TokenType.TIPIK, TokenType.IPAKITA, TokenType.DAWAT, TokenType.KUNG,
+            TokenType.KUNG_WALA, TokenType.KUNG_DILI, TokenType.PUNDOK, TokenType.ALANG_SA,
+            TokenType.UG, TokenType.O, TokenType.DILI
+    ));
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
@@ -43,9 +48,9 @@ public class Parser {
             if (match(TokenType.MUGNA)) return varDeclaration();
             return statement();
         } catch (RuntimeException error) {
-            printDebug("DEBUG: Error in declaration: " + error.getMessage());
-            synchronize();
-            return null;
+            throw new Error("DEBUG: Error in declaration: " + error.getMessage());
+//            synchronize();
+//            return null;
         }
     }
 
@@ -267,7 +272,13 @@ public class Parser {
 
             Token name = consume(TokenType.IDENTIFIER, "Expect variable name.");
             printDebug("DEBUG: Found variable name: " + name.lexeme);
-            // Store type in variableTypes map instead of name.varType
+//            if (name.lexeme.equals(name.lexeme.toUpperCase())) {
+//                throw new Error("Cannot use keywords as variable name");
+//            }
+//            // Store type in variableTypes map instead of name.varType
+//            if (KEYWORDS.contains(name)) {
+//                throw new RuntimeException("Cannot use keyword '" + name.lexeme + "' as a variable name.");
+//            }
             if (type != null) {
                 variableTypes.put(name.lexeme, type);
                 printDebug("DEBUG: Registered variable " + name.lexeme + " with type " + type);
@@ -277,6 +288,9 @@ public class Parser {
             Expr initializer = null;
             if (match(TokenType.ASSIGN)) {
                 printDebug("DEBUG: Found assignment operator");
+                if (check(TokenType.COMMA) || check(TokenType.EOF)) {
+                    throw new Error("Missing value after '='");
+                }
                 initializer = expression();
                 printDebug("DEBUG: Parsed initializer: " + initializer);
 
@@ -321,6 +335,10 @@ public class Parser {
 
             declarations.add(new Stmt.Var(name, initializer));
         } while (match(TokenType.COMMA));
+
+        if (previous().type == TokenType.COMMA) {
+            throw new Error("Trailing comma without a following variable");
+        }
 
         if (declarations.size() == 1) {
             return declarations.get(0);
@@ -523,7 +541,7 @@ public class Parser {
 
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
-        throw new RuntimeException(message);
+        throw new Error(message);
     }
 
     private void synchronize() {

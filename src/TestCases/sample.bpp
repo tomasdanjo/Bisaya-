@@ -1,7 +1,13 @@
 SUGOD
-    MUGNA NUMERO i
-    ALANG SA(i=1,i<=10,i++)
-    PUNDOK{
-        IPAKITA: i & ' '
-    }
+	MUGNA NUMERO a = 1, b, c
+	MUGNA LETRA as = 'x'
+	DAWAT: c
+	ALANG SA (a=1, a<=c, a++)
+	PUNDOK{
+		ALANG SA (b=1, b<=a, b++)
+		PUNDOK{
+			IPAKITA: a
+		}
+		IPAKITA: $
+	}
 KATAPUSAN

@@ -19,7 +19,7 @@ public class Interpreter implements Parser.Expr.Visitor<Object>, Parser.Stmt.Vis
             for (Parser.Stmt statement : statements) {
                 execute(statement);
             }
-            BisayaMain.printDebug("Interpretation complete");
+            System.out.println("\n\nInterpretation complete");
         } catch (RuntimeException error) {
             throw error;
         }
